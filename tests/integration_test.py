@@ -166,6 +166,53 @@ def test_option_remote(runner, open_changelog):
     [
         [
             'git commit --allow-empty -q -m "feat: Add file #1"',
+            'git commit --allow-empty -q -m "feat: Remove file #2"',
+        ]
+    ],
+)
+def test_option_ignore_one_commit(runner, open_changelog):
+    result = runner.invoke(main, ["--ignore", "Add", "--unreleased"])
+    assert result.exit_code == 0, result.stderr
+    assert result.output == ""
+    changelog = open_changelog().read()
+    assert_content = (
+        f"# Changelog\n\n## Unreleased ({date.today().strftime('%Y-%m-%d')})\n\n#### New Features\n\n"
+        f"* Remove file #2\n"
+    )
+    assert changelog == assert_content
+
+
+@pytest.mark.parametrize(
+    "commands",
+    [
+        [
+            'git commit --allow-empty -q -m "feat: Add file"',
+            "git tag 1.0.0",
+            'git commit --allow-empty -q -m "chore: Change"',
+            "git tag 2.0.0",
+            'git commit --allow-empty -q -m "chore: Remove file"'
+            "git tag 3.0.0",
+            "git remote add origin https://github.com/Michael-F-Bryan/auto-changelog.git",
+        ]
+    ],
+)
+def test_option_ignore_two_commits(runner, open_changelog):
+    result = runner.invoke(main, ["--ignore", "Add,Remove"])
+    assert result.exit_code == 0, result.stderr
+    assert result.output == ""
+    changelog = open_changelog().read()
+    assert_content = (
+        f"# Changelog\n\n## 2.0.0 ({date.today().strftime('%Y-%m-%d')})\n\n#### Others\n\n"
+        f"* Change\n"
+    )
+    assert changelog == assert_content
+
+
+@pytest.mark.parametrize(
+    "commands",
+    [
+        [
+            'git commit --allow-empty -q -m "feat: Add file #1"',
             "git remote add upstream git@github.com:Michael-F-Bryan/auto-changelog.git",
             "git remote add origin git@github.com:KeNaCo/auto-changelog.git",
         ]
